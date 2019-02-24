@@ -19,7 +19,7 @@ ANONSERVICE="/lib/systemd/system/anonscript.service"
 KEEPALIVE="/usr/local/bin/keepalive"
 
 #setup UPNP
-upnpd ppp0 eth0
+#sudo upnpc ppp0 eth0 #this is causting trouble
 sudo route add -net 239.0.0.0 netmask 255.0.0.0 eth0
 sudo route add -net 239.0.0.0 netmask 255.0.0.0 wlan0
 
@@ -46,8 +46,8 @@ sudo macchanger -r wlan0
 sudo macchanger -r eth0
 
 #randomize hostname
-RANDHOST=$(shuf -n1 /usr/share/dict/words) #pic random word from dictionary
-HOSTNAME=$(echo $RANDHOST | tr -dc '[:alpha:]') #remove symbols
+$(echo "RANDHOST=$(shuf -n1 /usr/share/dict/words)") #pic random word from dictionary ##THIS BREAKS
+$(echo "HOSTNAME=$(echo $RANDHOST | tr -dc '[:alpha:]')") #remove symbols ##THIS BREAKS
 sudo hostname $HOSTNAME	#set hostname
 
 sudo rm /etc/hostname #set hostname again, this time in the /etc/hostname file
@@ -67,7 +67,7 @@ sudo chmod +x /usr/local/bin/anonscript
 
 #create service unit to run anonscript at startup, before network connects
 #**************************************************************************************
-/bin/cat <<EOM >$ANONSERICE
+/bin/cat <<EOM >$ANONSERVICE
 
 [Unit]
 Description=Run anonscript ASAP
@@ -102,3 +102,5 @@ EOM
 
 #use crontab to run the KEEPALIVE script every 5 minutes
 sudo crontab -l | { cat; echo "*/5 * * * * $KEEPALIVE"; } | sudo crontab -
+
+echo "script finished succesfully"
