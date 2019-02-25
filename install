@@ -4,13 +4,16 @@ set -e #exits script if there is an error
 
 #update and install neccasary software
 sudo apt-get update
-sudo apt-get upgrade -y
+#sudo apt-get upgrade -y    #slows things down too much
 sudo apt-get install macchanger -y    #changes MAC addresses
 sudo apt-get install miniupnpc -y    #opens UPNP ports
 sudo apt install wamerican    #creates dictionary for random /words in /usr/share/dict
 
 #Set dynamic dns SECRETURL
 SECRETURL=***YourSecretURLfromYourDNSproviderGoesHere***
+
+#set port # to be forwarded using upnp
+PORT=***YourDesiredPortNumberGoesHere***
 
 #Location of each file being created
 DISABLEIPV6="/etc/sysctl.conf"
@@ -95,10 +98,13 @@ sudo sed -i '$ a\port 2222' /etc/ssh/sshd_config
 #**************************************************************************************
 /bin/cat <<EOM4 >$KEEPALIVE
 
-sudo curl -ks $SECRETURL  > /dev/null
-sudo upnpc -r 2222 tcp  > /dev/null
+sudo curl -ks $SECRETURL  > /dev/null 
+sudo upnpc -r $PORT tcp  > /dev/null
 EOM4
 #**************************************************************************************
+
+#make keepalive script executable
+sudo chmod +x $KEEPALIVE
 
 #use crontab to run the KEEPALIVE script every 5 minutes
 sudo crontab -l | { cat; echo "*/5 * * * * $KEEPALIVE"; } | sudo crontab -
