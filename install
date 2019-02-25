@@ -9,11 +9,13 @@ sudo apt-get install macchanger -y    #changes MAC addresses
 sudo apt-get install miniupnpc -y    #opens UPNP ports
 sudo apt install wamerican    #creates dictionary for random /words in /usr/share/dict
 
-#Set dynamic dns SECRETURL
-SECRETURL=***YourSecretURLfromYourDNSproviderGoesHere***
+#prompt for dynamic dns SECRETURL
+echo "Enter your dynamic dns update url starting with 'http://'"
+read=SECRETURL    # ***YourSecretURLfromYourDNSproviderGoesHere***
 
-#set port # to be forwarded using upnp
-PORT=***YourDesiredPortNumberGoesHere***
+#prompt port # to be forwarded using upnp
+echo "Enter port that you want to forward using upnp"
+read=PORT   #***YourDesiredPortNumberGoesHere***
 
 #Location of each file being created
 DISABLEIPV6="/etc/sysctl.conf"
@@ -99,7 +101,7 @@ sudo sed -i '$ a\port 2222' /etc/ssh/sshd_config
 /bin/cat <<EOM4 >$KEEPALIVE
 
 sudo curl -ks $SECRETURL  > /dev/null 
-sudo upnpc -r $PORT tcp  > /dev/null
+sudo upnpc -e E911 -r $PORT tcp  > /dev/null    #used service name E911 as red herring
 EOM4
 #**************************************************************************************
 
