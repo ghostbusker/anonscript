@@ -34,7 +34,7 @@ EOM1
 
 #write anonymizing script
 #**************************************************************************************
-/bin/cat <<EOM2 >$ANONSCRIPT
+/bin/cat <<"EOM2" >$ANONSCRIPT
 #!/bin/bash
 
 #disable interfaces for modification
@@ -46,12 +46,12 @@ sudo macchanger -r wlan0
 sudo macchanger -r eth0
 
 #randomize hostname
-'RANDHOST=$(shuf -n1 /usr/share/dict/words) #pic random word from dictionary ##THIS BREAKS'
-'HOSTNAME=$(echo $RANDHOST | tr -dc '[:alpha:]') #remove symbols ##THIS BREAKS'
-'sudo hostname $HOSTNAME	#set hostname'
+RANDHOST=$(shuf -n1 /usr/share/dict/words) #pic random word from dictionary ##THIS BREAKS
+HOSTNAME=$(echo $RANDHOST | tr -dc '[:alpha:]') #remove symbols ##THIS BREAKS
+sudo hostname $HOSTNAME	#set hostname
 
-'sudo rm /etc/hostname #set hostname again, this time in the /etc/hostname file'
-'echo $HOSTNAME >> /etc/hostname'
+sudo rm /etc/hostname #set hostname again, this time in the /etc/hostname file
+echo $HOSTNAME >> /etc/hostname
 
 sudo rm /etc/machine-id #remove and regenerate machine-id
 sudo systemd-machine-id-setup
