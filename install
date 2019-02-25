@@ -14,7 +14,7 @@ SECRETURL=***YourSecretURLfromYourDNSproviderGoesHere***
 
 #Location of each file being created
 DISABLEIPV6="/etc/sysctl.conf"
-ANONSCRIPT="/usr/local/bin/anonfile"
+ANONSCRIPT="/usr/local/bin/anonscript"
 ANONSERVICE="/lib/systemd/system/anonscript.service"
 KEEPALIVE="/usr/local/bin/keepalive"
 
@@ -34,7 +34,7 @@ EOM
 
 #write anonymizing script
 #**************************************************************************************
-/bin/cat <<EOM >$ANONSCRIPT
+/bin/cat <<EOM2 >$ANONSCRIPT
 #!/bin/bash
 
 #disable interfaces for modification
@@ -46,12 +46,12 @@ sudo macchanger -r wlan0
 sudo macchanger -r eth0
 
 #randomize hostname
-$(echo "RANDHOST=$(shuf -n1 /usr/share/dict/words)") #pic random word from dictionary ##THIS BREAKS
-$(echo "HOSTNAME=$(echo $RANDHOST | tr -dc '[:alpha:]')") #remove symbols ##THIS BREAKS
-sudo hostname $HOSTNAME	#set hostname
+'RANDHOST=$(shuf -n1 /usr/share/dict/words) #pic random word from dictionary ##THIS BREAKS'
+'HOSTNAME=$(echo $RANDHOST | tr -dc '[:alpha:]') #remove symbols ##THIS BREAKS'
+'sudo hostname $HOSTNAME	#set hostname'
 
-sudo rm /etc/hostname #set hostname again, this time in the /etc/hostname file
-echo $HOSTNAME >> /etc/hostname
+'sudo rm /etc/hostname #set hostname again, this time in the /etc/hostname file'
+'echo $HOSTNAME >> /etc/hostname'
 
 sudo rm /etc/machine-id #remove and regenerate machine-id
 sudo systemd-machine-id-setup
@@ -59,15 +59,15 @@ sudo systemd-machine-id-setup
 #re-enable interfaces
 sudo ifconfig wlan0 up
 sudo ifconfig eth0 up
-EOM
+EOM2
 #**************************************************************************************
 
 #make anonymizing script executable
-sudo chmod +x /usr/local/bin/anonscript
+sudo chmod +x $ANONSCRIPT
 
 #create service unit to run anonscript at startup, before network connects
 #**************************************************************************************
-/bin/cat <<EOM >$ANONSERVICE
+/bin/cat <<EOM3 >$ANONSERVICE
 
 [Unit]
 Description=Run anonscript ASAP
@@ -77,11 +77,11 @@ DefaultDependencies=no
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/anonscript
+ExecStart=$ANONSCRIPT
 
 [Install]
 WantedBy=basic.target
-EOM
+EOM3
 #**************************************************************************************
 
 #enable newly created service
@@ -93,11 +93,11 @@ sudo sed -i '$ a\port 2222' /etc/ssh/sshd_config
 
 #write keepalive script
 #**************************************************************************************
-/bin/cat <<EOM >$KEEPALIVE
+/bin/cat <<EOM4 >$KEEPALIVE
 
 sudo curl -ks $SECRETURL  > /dev/null
 sudo upnpc -r 2222 tcp  > /dev/null
-EOM
+EOM4
 #**************************************************************************************
 
 #use crontab to run the KEEPALIVE script every 5 minutes
