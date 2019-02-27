@@ -59,7 +59,7 @@ EOM1
 /bin/cat <<"EOM2" >$ANONSCRIPT
 #!/bin/bash
 
-sudo upnpc -e $SERVICE -r $PORT $PROTOCALL    #attempt to remove existing upnp mapping before IP changes
+sudo upnpc -e $SERVICE -d $PORT $PROTOCALL    #attempt to remove existing upnp mapping before IP changes
 
 #disable interfaces for modification
 sudo ifconfig wlan0 down
@@ -125,11 +125,16 @@ Before=shutdown.target reboot.target halt.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/upnpc -e $SERVICE -r $PORT $PROTOCALL    #attempt to remove existing upnp mapping
+ExecStart=/usr/bin/upnpc -e $SERVICE -d $PORT $PROTOCALL    #attempt to remove existing upnp mapping
 
 [Install]
 WantedBy=halt.target reboot.target shutdown.target
 EOM4
+#**************************************************************************************
+
+#enable newly created service
+sudo systemctl daemon-reload
+sudo systemctl enable upnpdelete.service
 
 #write keepalive script
 #**************************************************************************************
