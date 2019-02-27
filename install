@@ -28,7 +28,8 @@ read PORT   #***YourDesiredPortNumberGoesHere***
 
 #which protocol for the pinhole?
 echo "Which protocol> UDP or TCP? Type one:"
-read protocol
+read PROTOCOL
+
 #prompt for the name of the service that will show up in the UPnP entries/logs
 echo "Enter name of service for UPnP entry"
 read SERVICE
@@ -59,7 +60,7 @@ EOM1
 /bin/cat <<"EOM2" >$ANONSCRIPT
 #!/bin/bash
 
-sudo upnpc -e $SERVICE -d $PORT $PROTOCALL    #attempt to remove existing upnp mapping before IP changes
+sudo upnpc -e $SERVICE -d $PORT $PROTOCOL    #attempt to remove existing upnp mapping before IP changes
 
 #disable interfaces for modification
 sudo ifconfig wlan0 down
@@ -125,7 +126,7 @@ Before=shutdown.target reboot.target halt.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/upnpc -e $SERVICE -d $PORT $PROTOCALL    #attempt to remove existing upnp mapping
+ExecStart=/usr/bin/upnpc -e $SERVICE -d $PORT $PROTOCOL    #attempt to remove existing upnp mapping
 
 [Install]
 WantedBy=halt.target reboot.target shutdown.target
@@ -141,7 +142,7 @@ sudo systemctl enable upnpdelete.service
 /bin/cat <<EOM5 >$KEEPALIVE
 
 sudo curl -ks $SECRETURL  > /dev/null 2>&1
-sudo upnpc -e $SERVICE -r $PORT $PROTOCALL  > /dev/null 2>&1   #used service name E911 as red herring
+sudo upnpc -e $SERVICE -r $PORT $PROTOCOL  > /dev/null 2>&1   #used service name E911 as red herring
 EOM5
 #**************************************************************************************
 
@@ -155,6 +156,7 @@ sudo crontab -l | { cat; echo "*/5 * * * * $KEEPALIVE"; } | sudo crontab -
 #**************************************************************************************
 #listen on port 2222 instead of 22 for ssh
 sudo sed -i '$ a\port 2222' /etc/ssh/sshd_config
+touch /boot/ssh
 #**************************************************************************************
 
 #echo "script finished succesfully"
