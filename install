@@ -37,7 +37,7 @@ read SERVICE
 DISABLEIPV6="/etc/sysctl.conf"
 ANONSCRIPT="/usr/local/bin/anonscript"
 ANONSERVICE="/lib/systemd/system/anonscript.service"
-UPNPDELETE="/lib/systemd/system/upnpdelete.service
+UPNPDELETE="/lib/systemd/system/upnpdelete.service"
 KEEPALIVE="/usr/local/bin/keepalive"
 
 #setup UPNP
