@@ -9,7 +9,7 @@ sudo apt-get install macchanger -y    #changes MAC addresses
 
 #sudo apt-get install miniupnpc -y    #opens UPNP ports
 #Lets get the latest version instead!
-sudo apt-get install git
+sudo apt-get install git -y   #comes in handy
 sudo git clone https://github.com/miniupnp/miniupnp
 cd miniupnp/miniupnpc/
 sudo make
@@ -37,12 +37,13 @@ read SERVICE
 DISABLEIPV6="/etc/sysctl.conf"
 ANONSCRIPT="/usr/local/bin/anonscript"
 ANONSERVICE="/lib/systemd/system/anonscript.service"
+UPNPDELETE="/lib/systemd/system/upnpdelete.service
 KEEPALIVE="/usr/local/bin/keepalive"
 
 #setup UPNP
 #sudo upnpc ppp0 eth0 #this is causting trouble
-sudo route add -net 239.0.0.0 netmask 255.0.0.0 eth0
-sudo route add -net 239.0.0.0 netmask 255.0.0.0 wlan0
+sudo route add -net 239.0.0.0 netmask 255.0.0.0 eth0 > /dev/null 2>&1     #added /dev/null cause sometimes these throw errors
+sudo route add -net 239.0.0.0 netmask 255.0.0.0 wlan0 > /dev/null 2>&1
 
 #disable IPv6
 #**************************************************************************************
@@ -111,13 +112,32 @@ EOM3
 sudo systemctl daemon-reload
 sudo systemctl enable anonscript.service
 
+#Create service unit to delete existing upnp port mapping from router before shutdown
+#*************************************************************************************
+/bin/cat <<EOM4 >$UPNPDELETE
+[Unit]
+Description=Delet UPnP Port Mapping
+DefaultDependencies=no
+Before=shutdown.target reboot.target halt.target
+# This works because it is installed in the target and will be
+#   executed before the target state is entered
+# Also consider kexec.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/upnpc -e $SERVICE -r $PORT $PROTOCALL    #attempt to remove existing upnp mapping
+
+[Install]
+WantedBy=halt.target reboot.target shutdown.target
+EOM4
+
 #write keepalive script
 #**************************************************************************************
-/bin/cat <<EOM4 >$KEEPALIVE
+/bin/cat <<EOM5 >$KEEPALIVE
 
 sudo curl -ks $SECRETURL  > /dev/null 2>&1
 sudo upnpc -e $SERVICE -r $PORT $PROTOCALL  > /dev/null 2>&1   #used service name E911 as red herring
-EOM4
+EOM5
 #**************************************************************************************
 
 #make keepalive script executable
