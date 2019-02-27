@@ -5,7 +5,7 @@
 #update and install neccasary software
 sudo apt-get update
 #sudo apt-get upgrade -y    #slows things down too much
-sudo apt-get install macchanger -y    #changes MAC addresses
+sudo apt-get install macchanger -y    #changes MAC addresses #prompts durring install, cant figure out how to bypass
 
 #sudo apt-get install miniupnpc -y    #opens UPNP ports
 #Lets get the latest version instead!
