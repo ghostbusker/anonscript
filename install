@@ -1,4 +1,4 @@
-#!/bin/bash
+P!/bin/bash
 
 #set -e #exits script if there is an error Used for debugging
 
@@ -6,16 +6,32 @@
 sudo apt-get update
 #sudo apt-get upgrade -y    #slows things down too much
 sudo apt-get install macchanger -y    #changes MAC addresses
-sudo apt-get install miniupnpc -y    #opens UPNP ports
+
+#sudo apt-get install miniupnpc -y    #opens UPNP ports
+#Lets get the latest version instead!
+sudo apt-get install git
+sudo git clone https://github.com/miniupnp/miniupnp
+cd miniupnp/miniupnpc/
+sudo make
+sudo make install
+cd
+
 sudo apt install wamerican    #creates dictionary for random /words in /usr/share/dict
 
 #prompt for dynamic dns SECRETURL
 echo "Enter your dynamic dns update url starting with 'http://'"
-read=SECRETURL    # ***YourSecretURLfromYourDNSproviderGoesHere***
+read SECRETURL    # ***YourSecretURLfromYourDNSproviderGoesHere***
 
 #prompt port # to be forwarded using upnp
 echo "Enter port that you want to forward using upnp"
-read=PORT   #***YourDesiredPortNumberGoesHere***
+read PORT   #***YourDesiredPortNumberGoesHere***
+
+#which protocol for the pinhole?
+echo "Which protocol> UDP or TCP? Type one:"
+read protocol
+#prompt for the name of the service that will show up in the UPnP entries/logs
+echo "Enter name of service for UPnP entry"
+read SERVICE
 
 #Location of each file being created
 DISABLEIPV6="/etc/sysctl.conf"
@@ -41,6 +57,8 @@ EOM1
 #**************************************************************************************
 /bin/cat <<"EOM2" >$ANONSCRIPT
 #!/bin/bash
+
+sudo upnpc -e $SERVICE -r $PORT $PROTOCALL    #attempt to remove existing upnp mapping before IP changes
 
 #disable interfaces for modification
 sudo ifconfig wlan0 down
@@ -93,15 +111,12 @@ EOM3
 sudo systemctl daemon-reload
 sudo systemctl enable anonscript.service
 
-#listen on port 2222 instead of 22 for ssh
-sudo sed -i '$ a\port 2222' /etc/ssh/sshd_config
-
 #write keepalive script
 #**************************************************************************************
 /bin/cat <<EOM4 >$KEEPALIVE
 
 sudo curl -ks $SECRETURL  > /dev/null 2>&1
-sudo upnpc -e E911 -r $PORT tcp  > /dev/null 2>&1   #used service name E911 as red herring
+sudo upnpc -e $SERVICE -r $PORT $PROTOCALL  > /dev/null 2>&1   #used service name E911 as red herring
 EOM4
 #**************************************************************************************
 
@@ -111,4 +126,11 @@ sudo chmod +x $KEEPALIVE
 #use crontab to run the KEEPALIVE script every 5 minutes
 sudo crontab -l | { cat; echo "*/5 * * * * $KEEPALIVE"; } | sudo crontab -
 
-echo "script finished succesfully"
+#MY *ACTUAL* SERVICE
+#**************************************************************************************
+#listen on port 2222 instead of 22 for ssh
+sudo sed -i '$ a\port 2222' /etc/ssh/sshd_config
+#**************************************************************************************
+
+#echo "script finished succesfully"
+echo "script finished"    #leave em guessing
