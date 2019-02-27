@@ -60,15 +60,15 @@ EOM1
 /bin/cat <<"EOM2" >$ANONSCRIPT
 #!/bin/bash
 
-sudo upnpc -e $SERVICE -d $PORT $PROTOCOL    #attempt to remove existing upnp mapping before IP changes
+sudo upnpc -e $SERVICE -d $PORT $PROTOCOL    #attempt to remove existing upnp mapping before IP changes #THIS LINE IS BROKEN, i need to pass these variables into the script, currently broken by the quotes arount EeOhMmthree
 
 #disable interfaces for modification
-sudo ifconfig wlan0 down
-sudo ifconfig eth0 down
+sudo ifconfig wlan0 down > /dev/null 2>&1
+sudo ifconfig eth0 down > /dev/null 2>&1
 
 #randomize MAC addresses
-sudo macchanger -r wlan0
-sudo macchanger -r eth0
+sudo macchanger -r wlan0 > /dev/null 2>&1
+sudo macchanger -r eth0 > /dev/null 2>&1
 
 #randomize hostname
 RANDHOST=$(shuf -n1 /usr/share/dict/words) #pic random word from dictionary ##THIS BREAKS
@@ -82,8 +82,8 @@ sudo rm /etc/machine-id #remove and regenerate machine-id
 sudo systemd-machine-id-setup
 
 #re-enable interfaces
-sudo ifconfig wlan0 up
-sudo ifconfig eth0 up
+sudo ifconfig wlan0 up > /dev/null 2>&1
+sudo ifconfig eth0 up > /dev/null 2>&1
 EOM2
 #**************************************************************************************
 
@@ -116,8 +116,9 @@ sudo systemctl enable anonscript.service
 #Create service unit to delete existing upnp port mapping from router before shutdown
 #*************************************************************************************
 /bin/cat <<EOM4 >$UPNPDELETE
+
 [Unit]
-Description=Delet UPnP Port Mapping
+Description=Delete UPnP Port Mapping
 DefaultDependencies=no
 Before=shutdown.target reboot.target halt.target
 # This works because it is installed in the target and will be
