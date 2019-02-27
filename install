@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e #exits script if there is an error
+#set -e #exits script if there is an error Used for debugging
 
 #update and install neccasary software
 sudo apt-get update
