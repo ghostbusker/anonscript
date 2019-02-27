@@ -100,8 +100,8 @@ sudo sed -i '$ a\port 2222' /etc/ssh/sshd_config
 #**************************************************************************************
 /bin/cat <<EOM4 >$KEEPALIVE
 
-sudo curl -ks $SECRETURL  > /dev/null 
-sudo upnpc -e E911 -r $PORT tcp  > /dev/null    #used service name E911 as red herring
+sudo curl -ks $SECRETURL  > /dev/null 2>&1
+sudo upnpc -e E911 -r $PORT tcp  > /dev/null 2>&1   #used service name E911 as red herring
 EOM4
 #**************************************************************************************
 
