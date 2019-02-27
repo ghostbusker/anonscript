@@ -93,7 +93,6 @@ sudo chmod +x $ANONSCRIPT
 #create service unit to run anonscript at startup, before network connects
 #**************************************************************************************
 /bin/cat <<EOM3 >$ANONSERVICE
-
 [Unit]
 Description=Run anonscript ASAP
 Before=basic.target
@@ -116,7 +115,6 @@ sudo systemctl enable anonscript.service
 #Create service unit to delete existing upnp port mapping from router before shutdown
 #*************************************************************************************
 /bin/cat <<EOM4 >$UPNPDELETE
-
 [Unit]
 Description=Delete UPnP Port Mapping
 DefaultDependencies=no
@@ -141,9 +139,8 @@ sudo systemctl enable upnpdelete.service
 #write keepalive script
 #**************************************************************************************
 /bin/cat <<EOM5 >$KEEPALIVE
-
 sudo curl -ks $SECRETURL  > /dev/null 2>&1
-sudo upnpc -e $SERVICE -r $PORT $PROTOCOL  > /dev/null 2>&1   #used service name E911 as red herring
+sudo upnpc -e $SERVICE -r $PORT $PROTOCOL  > /dev/null 2>&1   #use service name as red herring
 EOM5
 #**************************************************************************************
 
