@@ -1,4 +1,4 @@
-P!/bin/bash
+#!/bin/bash
 
 #set -e #exits script if there is an error Used for debugging
 
