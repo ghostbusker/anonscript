@@ -2,21 +2,12 @@
 
 #set -e #exits script if there is an error Used for debugging
 
-#update and install neccasary software
-sudo apt-get update
-#sudo apt-get upgrade -y    #slows things down too much
-sudo apt-get install macchanger -y    #changes MAC addresses #prompts durring install, cant figure out how to bypass
-
-#sudo apt-get install miniupnpc -y    #opens UPNP ports
-#Lets get the latest version instead!
-sudo apt-get install git -y   #comes in handy
-sudo git clone https://github.com/miniupnp/miniupnp
-cd miniupnp/miniupnpc/
-sudo make
-sudo make install
-cd
-
-sudo apt install wamerican    #creates dictionary for random /words in /usr/share/dict
+#Location of each file being created
+DISABLEIPV6="/etc/sysctl.conf"
+ANONSCRIPT="/usr/local/bin/anonscript"
+ANONSERVICE="/lib/systemd/system/anonscript.service"
+UPNPDELETE="/lib/systemd/system/upnpdelete.service"
+KEEPALIVE="/usr/local/bin/keepalive"
 
 #prompt for dynamic dns SECRETURL
 echo "Enter your dynamic dns update url starting with 'http://'"
@@ -34,12 +25,19 @@ read PROTOCOL
 echo "Enter name of service for UPnP entry"
 read SERVICE
 
-#Location of each file being created
-DISABLEIPV6="/etc/sysctl.conf"
-ANONSCRIPT="/usr/local/bin/anonscript"
-ANONSERVICE="/lib/systemd/system/anonscript.service"
-UPNPDELETE="/lib/systemd/system/upnpdelete.service"
-KEEPALIVE="/usr/local/bin/keepalive"
+#update and install neccasary software
+sudo apt-get update
+#sudo apt-get upgrade -y    #slows things down too much
+sudo apt-get install macchanger -y    #changes MAC addresses #prompts durring install, cant figure out how to bypass
+sudo apt install wamerican    #creates dictionary for random /words in /usr/share/dict
+#sudo apt-get install miniupnpc -y    #opens UPNP ports
+#Lets get the latest version instead!
+sudo apt-get install git -y   #comes in handy
+sudo git clone https://github.com/miniupnp/miniupnp
+cd miniupnp/miniupnpc/
+sudo make
+sudo make install
+cd
 
 #setup UPNP
 #sudo upnpc ppp0 eth0 #this is causting trouble
