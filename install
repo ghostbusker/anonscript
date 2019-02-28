@@ -6,6 +6,7 @@
 DISABLEIPV6="/etc/sysctl.conf"
 ANONSCRIPT="/usr/local/bin/anonscript"
 ANONSERVICE="/lib/systemd/system/anonscript.service"
+UPNPDELETESCRIPT="/usr/local/bin/upnpdeletescript"
 UPNPDELETE="/lib/systemd/system/upnpdelete.service"
 KEEPALIVE="/usr/local/bin/keepalive"
 
@@ -57,9 +58,9 @@ EOM1
 #**************************************************************************************
 /bin/cat <<"EOM2" >$ANONSCRIPT
 #!/bin/bash
+#LINE BELOW INTENTIONALLY LEFT BLANK
 
-sudo upnpc -e $SERVICE -d $PORT $PROTOCOL    #attempt to remove existing upnp mapping before IP changes #THIS LINE IS BROKEN, i need to pass these variables into the script, currently broken by the quotes arount EeOhMmthree
-
+#LINE ABOVE INTENTIONALLY LEFT BLANK
 #disable interfaces for modification
 sudo ifconfig wlan0 down > /dev/null 2>&1
 sudo ifconfig eth0 down > /dev/null 2>&1
@@ -84,6 +85,8 @@ sudo ifconfig wlan0 up > /dev/null 2>&1
 sudo ifconfig eth0 up > /dev/null 2>&1
 EOM2
 #**************************************************************************************
+#now add this line back to the file AFTER processing SERVICE PORT PROTOCOL
+sudo sed '3isudo upnpc -e $SERVICE -d $PORT $PROTOCOL' $ANONSCRIPT    #attempt to remove existing upnp mapping before IP changes 
 
 #make anonymizing script executable
 sudo chmod +x $ANONSCRIPT
@@ -117,13 +120,10 @@ sudo systemctl enable anonscript.service
 Description=Delete UPnP Port Mapping
 DefaultDependencies=no
 Before=shutdown.target reboot.target halt.target
-# This works because it is installed in the target and will be
-#   executed before the target state is entered
-# Also consider kexec.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/upnpc -e $SERVICE -d $PORT $PROTOCOL    #attempt to remove existing upnp mapping
+ExecStart=$UPNPDELETESCRIPT  #attempt to remove existing upnp mapping
 
 [Install]
 WantedBy=halt.target reboot.target shutdown.target
@@ -137,6 +137,7 @@ sudo systemctl enable upnpdelete.service
 #write keepalive script
 #**************************************************************************************
 /bin/cat <<EOM5 >$KEEPALIVE
+#!/bin/bash
 sudo curl -ks $SECRETURL  > /dev/null 2>&1
 sudo upnpc -e $SERVICE -r $PORT $PROTOCOL  > /dev/null 2>&1   #use service name as red herring
 EOM5
@@ -144,9 +145,18 @@ EOM5
 
 #make keepalive script executable
 sudo chmod +x $KEEPALIVE
-
 #use crontab to run the KEEPALIVE script every 5 minutes
 sudo crontab -l | { cat; echo "*/5 * * * * $KEEPALIVE"; } | sudo crontab -
+
+#in the wrong order but this is the upnpdeletescript that gets run on shutdown and when using anonscript
+#**************************************************************************************
+/bin/cat <<EOM6 >$UPNPDELETESCRIPT
+#!/bin/bash
+sudo upnpc -e $SERVICE -d $PORT $PROTOCOL  > /dev/null 2>&1
+EOM6
+#*************************************************************************************
+#make upnpdelete script executable
+sudo chmod +x $UPNPDELETESCRIPT
 
 #MY *ACTUAL* SERVICE
 #**************************************************************************************
