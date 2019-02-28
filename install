@@ -162,7 +162,8 @@ sudo chmod +x $UPNPDELETESCRIPT
 #**************************************************************************************
 #listen on port 2222 instead of 22 for ssh
 sudo sed -i '$ a\port 2222' /etc/ssh/sshd_config
-touch /boot/ssh
+touch ssh
+sudo mv ssh /boot/
 #**************************************************************************************
 
 #echo "script finished succesfully"
