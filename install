@@ -61,6 +61,7 @@ EOM1
 #LINE BELOW INTENTIONALLY LEFT BLANK
 
 #LINE ABOVE INTENTIONALLY LEFT BLANK
+
 #disable interfaces for modification
 sudo ifconfig wlan0 down > /dev/null 2>&1
 sudo ifconfig eth0 down > /dev/null 2>&1
@@ -76,6 +77,8 @@ sudo hostname $HOSTNAME	#set hostname
 
 sudo rm /etc/hostname #set hostname again, this time in the /etc/hostname file
 echo $HOSTNAME >> /etc/hostname
+
+sudo sed -i '/127.0.1.1/c\127.0.1.1         '"$HOSTNAME" /etc/hosts
 
 sudo rm /etc/machine-id #remove and regenerate machine-id
 sudo systemd-machine-id-setup
