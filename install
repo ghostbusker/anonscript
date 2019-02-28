@@ -89,7 +89,7 @@ sudo ifconfig eth0 up > /dev/null 2>&1
 EOM2
 #**************************************************************************************
 #now add this line back to the file AFTER processing SERVICE PORT PROTOCOL
-sudo sed '3isudo upnpc -e $SERVICE -d $PORT $PROTOCOL' $ANONSCRIPT    #attempt to remove existing upnp mapping before IP changes 
+sudo sed -i "3isudo upnpc -e $SERVICE -d $PORT $PROTOCOL" $ANONSCRIPT    #attempt to remove existing upnp mapping before IP changes 
 
 #make anonymizing script executable
 sudo chmod +x $ANONSCRIPT
