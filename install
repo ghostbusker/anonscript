@@ -1,6 +1,9 @@
 #!/bin/bash
 
-#set -e #exits script if there is an error Used for debugging
+echo "This is ghostbusker's anonscript $BASH_VERSION" > menu1
+whiptail --textbox --scrolltext menu1 24 78
+
+set -e #exits script if there is an error Used for debugging
 
 #Location of each file being created
 DISABLEIPV6="/etc/sysctl.conf"
@@ -11,37 +14,30 @@ UPNPDELETE="/lib/systemd/system/upnpdelete.service"
 KEEPALIVE="/usr/local/bin/keepalive"
 
 #prompt for dynamic dns SECRETURL
-echo "Enter your dynamic dns update url starting with 'http://'"
-read SECRETURL    # ***YourSecretURLfromYourDNSproviderGoesHere***
+SECRETURL=$(whiptail --inputbox "Enter your dynamic dns update url starting with 'http://'" 8 78 http://freedns.afraid.org/dynamic/update.php?L0ng5tr1ng0fL33t3rs4ndNumb3r5 --title "Dynamic DNS URL" 3>&1 1>&2 2>&3)
 
 #prompt port # to be forwarded using upnp
-echo "Enter port that you want to forward using upnp"
-read PORT   #***YourDesiredPortNumberGoesHere***
+PORT=$(whiptail --inputbox "Enter the Port number to be added using UPnP" 8 78 22 --title "UPnP Port" 3>&1 1>&2 2>&3)
 
-#which protocol for the pinhole?
-echo "Which protocol> UDP or TCP? Type one:"
-read PROTOCOL
+whiptail --title "UPnP Protcol" --radiolist \
+"Which protocol to forward using UPnP: TCP or UDP" 20 78 4 \
+"PROTOCOL" "TCP" TCP \
+"PROTOCOL" "UDP" UDP
 
 #prompt for the name of the service that will show up in the UPnP entries/logs
-echo "Enter name of service for UPnP entry"
-read SERVICE
+SERVICE=$(whiptail --inputbox "Enter the name that will be seen in the UPnP mapping entry." 8 78 ServiceName --title "UPnP Service Name" 3>&1 1>&2 2>&3)
 
 #update and install neccasary software
 sudo apt-get update
-#sudo apt-get upgrade -y    #slows things down too much
-sudo apt-get install macchanger -y    #changes MAC addresses #prompts durring install, cant figure out how to bypass
+sudo apt-get install macchanger git -y    #install these programs
 sudo apt install wamerican    #creates dictionary for random /words in /usr/share/dict
-#sudo apt-get install miniupnpc -y    #opens UPNP ports
-#Lets get the latest version instead!
-sudo apt-get install git -y   #comes in handy
-sudo git clone https://github.com/miniupnp/miniupnp
+sudo git clone https://github.com/miniupnp/miniupnp   #get the latest version of this program and install it
 cd miniupnp/miniupnpc/
 sudo make
 sudo make install
 cd
 
 #setup UPNP
-#sudo upnpc ppp0 eth0 #this is causting trouble
 sudo route add -net 239.0.0.0 netmask 255.0.0.0 eth0 > /dev/null 2>&1     #added /dev/null cause sometimes these throw errors
 sudo route add -net 239.0.0.0 netmask 255.0.0.0 wlan0 > /dev/null 2>&1
 
@@ -58,9 +54,7 @@ EOM1
 #**************************************************************************************
 /bin/cat <<"EOM2" >$ANONSCRIPT
 #!/bin/bash
-#LINE BELOW INTENTIONALLY LEFT BLANK
 
-#LINE ABOVE INTENTIONALLY LEFT BLANK
 
 #disable interfaces for modification
 sudo ifconfig wlan0 down > /dev/null 2>&1
@@ -73,15 +67,16 @@ sudo macchanger -r eth0 > /dev/null 2>&1
 #randomize hostname
 RANDHOST=$(shuf -n1 /usr/share/dict/words) #pic random word from dictionary ##THIS BREAKS
 HOSTNAME=$(echo $RANDHOST | tr -dc '[:alpha:]') #remove symbols ##THIS BREAKS
-sudo hostname $HOSTNAME	#set hostname
+sudo hostname $HOSTNAME > /dev/null 2>&1	#set hostname
 
 sudo rm /etc/hostname #set hostname again, this time in the /etc/hostname file
 echo $HOSTNAME >> /etc/hostname
 
 sudo sed -i '/127.0.1.1/c\127.0.1.1         '"$HOSTNAME" /etc/hosts
 
-sudo rm /etc/machine-id #remove and regenerate machine-id
-sudo systemd-machine-id-setup
+#remove and regenerate machine-id
+sudo rm /etc/machine-id 
+sudo systemd-machine-id-setup > /dev/null 2>&1
 
 #re-enable interfaces
 sudo ifconfig wlan0 up > /dev/null 2>&1
@@ -148,8 +143,7 @@ EOM5
 
 #make keepalive script executable
 sudo chmod +x $KEEPALIVE
-#use crontab to run the KEEPALIVE script every 5 minutes
-sudo crontab -l | { cat; echo "*/5 * * * * $KEEPALIVE"; } | sudo crontab -
+sudo crontab -l | { cat; echo "*/5 * * * * $KEEPALIVE"; } | sudo crontab -    #run ever 5 minutes
 
 #in the wrong order but this is the upnpdeletescript that gets run on shutdown and when using anonscript
 #**************************************************************************************
@@ -165,9 +159,7 @@ sudo chmod +x $UPNPDELETESCRIPT
 #**************************************************************************************
 #listen on port 2222 instead of 22 for ssh
 sudo sed -i '$ a\port 2222' /etc/ssh/sshd_config
-touch ssh
-sudo mv ssh /boot/
+touch /boot/ssh
 #**************************************************************************************
 
-#echo "script finished succesfully"
-echo "script finished"    #leave em guessing
+echo "script finished" 
