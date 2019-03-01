@@ -19,9 +19,9 @@ SECRETURL=$(whiptail --inputbox "Enter your dynamic dns update url starting with
 PORT=$(whiptail --inputbox "Enter the Port number to be added using UPnP" 8 78 22 --title "UPnP Port" 3>&1 1>&2 2>&3)
 
 PROTOCOL=$(whiptail --title "UPnP Protcol" --radiolist \
-"Which protocol to forward using UPnP: TCP or UDP" 20 78 4 \
-"PROTOCOL" "TCP" TCP \
-"PROTOCOL" "UDP" UDP )
+"Which protocol to forward using UPnP: TCP or UDP" 20 78 2 \
+"TCP" "TCP" ON \
+"UDP" "UDP" OFF )
 
 #prompt for the name of the service that will show up in the UPnP entries/logs
 SERVICE=$(whiptail --inputbox "Enter the name that will be seen in the UPnP mapping entry." 8 78 ServiceName --title "UPnP Service Name" 3>&1 1>&2 2>&3)
