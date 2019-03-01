@@ -78,7 +78,8 @@ sudo ifconfig wlan0 up > /dev/null 2>&1
 sudo ifconfig eth0 up > /dev/null 2>&1
 exit 0
 EOM2
-sudo sed -i "3isudo upnpc -e $SERVICE -d $PORT $PROTOCOL" $ANONSCRIPT    #insert this line AFTER processing arguments 
+#sudo sed -i "3isudo upnpc -e $SERVICE -d $PORT $PROTOCOL" $ANONSCRIPT    #insert this line AFTER processing arguments
+sudo sed -i "3isudo $UPNPDELETESCRIPT" $ANONSCRIPT    #insert this line AFTER processing arguments
 #**************************************************************************************
 
 #write keepalive script
@@ -122,15 +123,18 @@ EOM4
 /bin/cat <<EOM5 >$UPNPDELETE
 [Unit]
 Description=Delete UPnP Port Mapping
-DefaultDependencies=no
-Before=shutdown.target reboot.target halt.target
+#DefaultDependencies=no
+#Before=shutdown.target reboot.target halt.target
 
 [Service]
 Type=oneshot
-ExecStart=$UPNPDELETESCRIPT  #attempt to remove existing upnp mapping
+RemainAfterExit=true
+ExecStart=/bin/true
+ExecStop=$UPNPDELETESCRIPT  #attempt to remove existing upnp mapping
 
 [Install]
-WantedBy=halt.target reboot.target shutdown.target
+WantedBy-multi-user.target
+#WantedBy=halt.target reboot.target shutdown.target
 EOM5
 #**************************************************************************************
 
