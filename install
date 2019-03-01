@@ -88,7 +88,7 @@ sudo sed -i "3isudo upnpc -e $SERVICE -d $PORT $PROTOCOL" $ANONSCRIPT    #insert
 sudo curl -ks $SECRETURL  > /dev/null 2>&1
 sudo upnpc -e $SERVICE -r $PORT $PROTOCOL   #use service name as red herring
 EOM3
-sudo crontab -l | { cat; echo "*/5 * * * * $KEEPALIVE"; } | sudo crontab -    #run every 5 minutes
+sudo crontab -l | { cat; echo "*/5 * * * * $USER $KEEPALIVE"; } | sudo crontab -    #run every 5 minutes
 #**************************************************************************************
 
 #write upnpdelete script
