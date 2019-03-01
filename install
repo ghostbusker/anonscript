@@ -1,7 +1,6 @@
 #!/bin/bash
 
-echo "This is ghostbusker's anonscript $BASH_VERSION" > menu1
-whiptail --textbox --scrolltext menu1 24 78
+whiptail --title "This is the script you are about to install" --textbox --scrolltext $0 24 78
 
 set -e #exits script if there is an error Used for debugging
 
@@ -19,10 +18,10 @@ SECRETURL=$(whiptail --inputbox "Enter your dynamic dns update url starting with
 #prompt port # to be forwarded using upnp
 PORT=$(whiptail --inputbox "Enter the Port number to be added using UPnP" 8 78 22 --title "UPnP Port" 3>&1 1>&2 2>&3)
 
-whiptail --title "UPnP Protcol" --radiolist \
+PROTOCOL=$(whiptail --title "UPnP Protcol" --radiolist \
 "Which protocol to forward using UPnP: TCP or UDP" 20 78 4 \
 "PROTOCOL" "TCP" TCP \
-"PROTOCOL" "UDP" UDP
+"PROTOCOL" "UDP" UDP )
 
 #prompt for the name of the service that will show up in the UPnP entries/logs
 SERVICE=$(whiptail --inputbox "Enter the name that will be seen in the UPnP mapping entry." 8 78 ServiceName --title "UPnP Service Name" 3>&1 1>&2 2>&3)
@@ -55,7 +54,6 @@ EOM1
 /bin/cat <<"EOM2" >$ANONSCRIPT
 #!/bin/bash
 
-
 #disable interfaces for modification
 sudo ifconfig wlan0 down > /dev/null 2>&1
 sudo ifconfig eth0 down > /dev/null 2>&1
@@ -65,14 +63,12 @@ sudo macchanger -r wlan0 > /dev/null 2>&1
 sudo macchanger -r eth0 > /dev/null 2>&1
 
 #randomize hostname
-RANDHOST=$(shuf -n1 /usr/share/dict/words) #pic random word from dictionary ##THIS BREAKS
-HOSTNAME=$(echo $RANDHOST | tr -dc '[:alpha:]') #remove symbols ##THIS BREAKS
+RANDHOST=$(shuf -n1 /usr/share/dict/words) #pic random word from dictionary
+HOSTNAME=$(echo $RANDHOST | tr -dc '[:alpha:]') #remove symbols
 sudo hostname $HOSTNAME > /dev/null 2>&1	#set hostname
-
 sudo rm /etc/hostname #set hostname again, this time in the /etc/hostname file
 echo $HOSTNAME >> /etc/hostname
-
-sudo sed -i '/127.0.1.1/c\127.0.1.1         '"$HOSTNAME" /etc/hosts
+sudo sed -i '/127.0.1.1/c\127.0.1.1         '"$HOSTNAME" /etc/hosts   #set hostname one more time in /etc/hosts
 
 #remove and regenerate machine-id
 sudo rm /etc/machine-id 
@@ -82,16 +78,30 @@ sudo systemd-machine-id-setup > /dev/null 2>&1
 sudo ifconfig wlan0 up > /dev/null 2>&1
 sudo ifconfig eth0 up > /dev/null 2>&1
 EOM2
+sudo sed -i "3isudo upnpc -e $SERVICE -d $PORT $PROTOCOL" $ANONSCRIPT    #insert this line AFTER processing arguments 
 #**************************************************************************************
-#now add this line back to the file AFTER processing SERVICE PORT PROTOCOL
-sudo sed -i "3isudo upnpc -e $SERVICE -d $PORT $PROTOCOL" $ANONSCRIPT    #attempt to remove existing upnp mapping before IP changes 
 
-#make anonymizing script executable
-sudo chmod +x $ANONSCRIPT
+#write keepalive script
+#**************************************************************************************
+/bin/cat <<EOM3 >$KEEPALIVE
+#!/bin/bash
+sudo curl -ks $SECRETURL  > /dev/null 2>&1
+sudo upnpc -e $SERVICE -r $PORT $PROTOCOL   #use service name as red herring
+EOM3
+sudo crontab -l | { cat; echo "*/5 * * * * $KEEPALIVE"; } | sudo crontab -    #run every 5 minutes
+#**************************************************************************************
+
+#write upnpdelete script
+#**************************************************************************************
+/bin/cat <<EOM6 >$UPNPDELETESCRIPT
+#!/bin/bash
+sudo upnpc -e $SERVICE -d $PORT $PROTOCOL
+EOM6
+#*************************************************************************************
 
 #create service unit to run anonscript at startup, before network connects
 #**************************************************************************************
-/bin/cat <<EOM3 >$ANONSERVICE
+/bin/cat <<EOM4 >$ANONSERVICE
 [Unit]
 Description=Run anonscript ASAP
 Before=basic.target
@@ -104,16 +114,12 @@ ExecStart=$ANONSCRIPT
 
 [Install]
 WantedBy=basic.target
-EOM3
+EOM4
 #**************************************************************************************
-
-#enable newly created service
-sudo systemctl daemon-reload
-sudo systemctl enable anonscript.service
 
 #Create service unit to delete existing upnp port mapping from router before shutdown
 #*************************************************************************************
-/bin/cat <<EOM4 >$UPNPDELETE
+/bin/cat <<EOM5 >$UPNPDELETE
 [Unit]
 Description=Delete UPnP Port Mapping
 DefaultDependencies=no
@@ -125,35 +131,18 @@ ExecStart=$UPNPDELETESCRIPT  #attempt to remove existing upnp mapping
 
 [Install]
 WantedBy=halt.target reboot.target shutdown.target
-EOM4
-#**************************************************************************************
-
-#enable newly created service
-sudo systemctl daemon-reload
-sudo systemctl enable upnpdelete.service
-
-#write keepalive script
-#**************************************************************************************
-/bin/cat <<EOM5 >$KEEPALIVE
-#!/bin/bash
-sudo curl -ks $SECRETURL  > /dev/null 2>&1
-sudo upnpc -e $SERVICE -r $PORT $PROTOCOL  > /dev/null 2>&1   #use service name as red herring
 EOM5
 #**************************************************************************************
 
-#make keepalive script executable
+#make each script executable
+sudo chmod +x $ANONSCRIPT
 sudo chmod +x $KEEPALIVE
-sudo crontab -l | { cat; echo "*/5 * * * * $KEEPALIVE"; } | sudo crontab -    #run ever 5 minutes
-
-#in the wrong order but this is the upnpdeletescript that gets run on shutdown and when using anonscript
-#**************************************************************************************
-/bin/cat <<EOM6 >$UPNPDELETESCRIPT
-#!/bin/bash
-sudo upnpc -e $SERVICE -d $PORT $PROTOCOL  > /dev/null 2>&1
-EOM6
-#*************************************************************************************
-#make upnpdelete script executable
 sudo chmod +x $UPNPDELETESCRIPT
+
+#enable newly created services
+sudo systemctl daemon-reload
+sudo systemctl enable anonscript.service
+sudo systemctl enable upnpdelete.service
 
 #MY *ACTUAL* SERVICE
 #**************************************************************************************
