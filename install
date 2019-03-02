@@ -133,7 +133,7 @@ ExecStart=/bin/true
 ExecStop=$UPNPDELETESCRIPT  #attempt to remove existing upnp mapping
 
 [Install]
-WantedBy-multi-user.target
+WantedBy=multi-user.target
 #WantedBy=halt.target reboot.target shutdown.target
 EOM5
 #**************************************************************************************
