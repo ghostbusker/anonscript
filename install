@@ -5,7 +5,7 @@ whiptail --title "This is the script you are about to install" --textbox --scrol
 set -e #exits script if there is an error Used for debugging
 
 #Preset your main vairaibles here. You will still be promted to change
-SECRETURL=http://freedns.afraid.org/dynamic/update.php?L0ng5tr1ng0fL33t3rs4ndNumb3r5
+SECRETURL="http://YourDNSProvider.com/dynamic/update.php?L0ng5tr1ng0fL33t3rs4ndNumb3r5"
 PORT=22
 SERVICE=ServiceName
 
