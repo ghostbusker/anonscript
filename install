@@ -4,6 +4,11 @@ whiptail --title "This is the script you are about to install" --textbox --scrol
 
 set -e #exits script if there is an error Used for debugging
 
+#Preset your main vairaibles here. You will still be promted to change
+SECRETURL=http://freedns.afraid.org/dynamic/update.php?L0ng5tr1ng0fL33t3rs4ndNumb3r5
+PORT=22
+SERVICE=ServiceName
+
 #Location of each file being created
 DISABLEIPV6="/etc/sysctl.conf"
 ANONSCRIPT="/usr/local/bin/anonscript"
@@ -13,17 +18,17 @@ UPNPDELETE="/lib/systemd/system/upnpdelete.service"
 KEEPALIVE="/usr/local/bin/keepalive"
 
 #prompt for dynamic dns SECRETURL
-SECRETURL=$(whiptail --inputbox "Enter your dynamic dns update url starting with 'http://'" 8 78 http://freedns.afraid.org/dynamic/update.php?L0ng5tr1ng0fL33t3rs4ndNumb3r5 --title "Dynamic DNS URL" 3>&1 1>&2 2>&3)
+SECRETURL=$(whiptail --inputbox "Enter your dynamic dns update url starting with 'http://'" 8 78 $SECRETURL --title "Dynamic DNS URL" 3>&1 1>&2 2>&3)
 
 #prompt port # to be forwarded using upnp
-PORT=$(whiptail --inputbox "Enter the Port number to be added using UPnP" 8 78 22 --title "UPnP Port" 3>&1 1>&2 2>&3)
+PORT=$(whiptail --inputbox "Enter the Port number to be added using UPnP" 8 78 $PORT --title "UPnP Port" 3>&1 1>&2 2>&3)
 
 PROTOCOL=$(whiptail --radiolist "Which protocol to forward using UPnP" 20 78 2 --title "UPnP Protcol" \
 "TCP" "Transmission Control Protocol" ON \
 "UDP" "User Datagram Protocol" OFF 3>&1 1>&2 2>&3 )
 
 #prompt for the name of the service that will show up in the UPnP entries/logs
-SERVICE=$(whiptail --inputbox "Enter the name that will be seen in the UPnP mapping entry." 8 78 ServiceName --title "UPnP Service Name" 3>&1 1>&2 2>&3)
+SERVICE=$(whiptail --inputbox "Enter the name that will be seen in the UPnP mapping entry." 8 78 $SERVICE --title "UPnP Service Name" 3>&1 1>&2 2>&3)
 
 #update and install neccasary software
 sudo apt-get update
