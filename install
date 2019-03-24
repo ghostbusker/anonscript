@@ -99,10 +99,15 @@ sudo crontab -l | { cat; echo "*/5 * * * * /bin/bash $KEEPALIVE"; } | sudo cront
 
 #write upnpdelete script
 #**************************************************************************************
-/bin/cat <<EOM6 >$UPNPDELETESCRIPT
+/bin/cat <<"EOM6" >$UPNPDELETESCRIPT
 #!/bin/bash
+
+PROTOCOL=$(sudo upnpc -l | grep -e 'UDP' -e 'TCP' | grep -e '$PORT' | grep -v '$(hostname -I)' | cut -c4-7 )
+SERVICE=$(sudo upnpc -l | grep -e 'UDP' -e 'TCP' | grep -e '$PORT' | grep -v '$(hostname -I)' | cut -d "'" -f 2 )
 sudo upnpc -e $SERVICE -d $PORT $PROTOCOL
-EOM6
+
+"EOM6"
+sudo sed -i "3iPORT=$PORT" $UPNPDELETESCRIPT    #insert this line AFTER processing arguments
 #*************************************************************************************
 
 #create service unit to run anonscript at startup, before network connects
