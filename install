@@ -83,8 +83,6 @@ sudo ifconfig wlan0 up > /dev/null 2>&1
 sudo ifconfig eth0 up > /dev/null 2>&1
 exit 0
 EOM2
-#sudo sed -i "3isudo upnpc -e $SERVICE -d $PORT $PROTOCOL" $ANONSCRIPT    #insert this line AFTER processing arguments
-#sudo sed -i "3isudo $UPNPDELETESCRIPT" $ANONSCRIPT    #insert this line AFTER processing arguments
 #**************************************************************************************
 
 #write keepalive script
@@ -100,7 +98,7 @@ sudo crontab -l | { cat; echo "*/5 * * * * /bin/bash $KEEPALIVE"; } | sudo cront
 
 #write upnpdelete script
 #**************************************************************************************
-/bin/cat <<"EOM6" >$UPNPDELETESCRIPT
+/bin/cat <<"EOM4" >$UPNPDELETESCRIPT
 #!/bin/bash
 
 TEMP=$(sudo upnpc -l | grep -e "UDP" -e "TCP" | grep -e "$PORT" | grep -v "$(hostname -I)")
@@ -108,13 +106,13 @@ PROTOCOL=$(echo $TEMP | cut -c3-6)
 SERVICE=$(echo $TEMP | cut -d "'" -f 2)
 sudo upnpc -e $SERVICE -d $PORT $PROTOCOL
 
-EOM6
+EOM4
 sudo sed -i "3iPORT=$PORT" $UPNPDELETESCRIPT    #insert this line AFTER processing arguments
 #*************************************************************************************
 
 #create service unit to run anonscript at startup, before network connects
 #**************************************************************************************
-/bin/cat <<EOM4 >$ANONSERVICE
+/bin/cat <<EOM5 >$ANONSERVICE
 [Unit]
 Description=Run anonscript ASAP
 Before=basic.target
@@ -127,12 +125,12 @@ ExecStart=$ANONSCRIPT
 
 [Install]
 WantedBy=basic.target
-EOM4
+EOM5
 #**************************************************************************************
 
 #Create service unit to delete existing upnp port mapping from router before shutdown
 #*************************************************************************************
-/bin/cat <<EOM5 >$UPNPDELETE
+/bin/cat <<EOM6 >$UPNPDELETE
 [Unit]
 Description=Delete UPnP Port Mapping
 #DefaultDependencies=no
@@ -147,7 +145,7 @@ ExecStop=$UPNPDELETESCRIPT  #attempt to remove existing upnp mapping
 [Install]
 WantedBy=multi-user.target
 #WantedBy=halt.target reboot.target shutdown.target
-EOM5
+EOM6
 #**************************************************************************************
 
 #make each script executable
@@ -163,7 +161,7 @@ sudo systemctl enable upnpdelete.service
 #MY *ACTUAL* SERVICE
 #**************************************************************************************
 #listen on port 2222 instead of 22 for ssh
-sudo sed -i '$ a\port 2222' /etc/ssh/sshd_config
+sudo sed -i '$ a\port $PORT' /etc/ssh/sshd_config
 touch /boot/ssh
 #**************************************************************************************
 
