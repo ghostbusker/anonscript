@@ -102,6 +102,9 @@ sudo crontab -l | { cat; echo "*/5 * * * * /bin/bash $KEEPALIVE"; } | sudo cront
 #!/bin/bash
 
 TEMP=$(sudo upnpc -l | grep -e "UDP" -e "TCP" | grep -e "$PORT" | grep -v "$(hostname -I)")
+if [ -z "${TEMP}" ]; then       # exit script here if no conflicts found       
+        exit 0
+fi
 PROTOCOL=$(echo $TEMP | cut -c3-6)
 SERVICE=$(echo $TEMP | cut -d "'" -f 2)
 sudo upnpc -e $SERVICE -d $PORT $PROTOCOL
