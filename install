@@ -164,7 +164,7 @@ sudo systemctl enable upnpdelete.service
 #MY *ACTUAL* SERVICE
 #**************************************************************************************
 #listen on port 2222 instead of 22 for ssh
-sudo sed -i '$ a\port $PORT' /etc/ssh/sshd_config
+sudo sed -i "$ a\port $PORT" /etc/ssh/sshd_config
 touch /boot/ssh
 #**************************************************************************************
 
