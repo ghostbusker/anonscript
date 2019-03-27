@@ -14,7 +14,7 @@ DISABLEIPV6="/etc/sysctl.conf"
 ANONSCRIPT="/usr/local/bin/anonscript"
 ANONSERVICE="/lib/systemd/system/anonscript.service"
 UPNPDELETESCRIPT="/usr/local/bin/upnpdeletescript"
-UPNPDELETE="/lib/systemd/system/upnpdelete.service"
+#UPNPDELETE="/lib/systemd/system/upnpdelete.service"
 KEEPALIVE="/usr/local/bin/keepalive"
 
 #prompt for dynamic dns SECRETURL
@@ -133,22 +133,22 @@ EOM5
 
 #Create service unit to delete existing upnp port mapping from router before shutdown
 #*************************************************************************************
-/bin/cat <<EOM6 >$UPNPDELETE
-[Unit]
-Description=Delete UPnP Port Mapping
+#/bin/cat <<EOM6 >$UPNPDELETE
+#[Unit]
+#Description=Delete UPnP Port Mapping
 #DefaultDependencies=no
 #Before=shutdown.target reboot.target halt.target
 
-[Service]
-Type=oneshot
-RemainAfterExit=true
-ExecStart=/bin/true
-ExecStop=$UPNPDELETESCRIPT  #attempt to remove existing upnp mapping
+#[Service]
+#Type=oneshot
+#RemainAfterExit=true
+#ExecStart=/bin/true
+#ExecStop=$UPNPDELETESCRIPT  #attempt to remove existing upnp mapping
 
-[Install]
-WantedBy=multi-user.target
+#[Install]
+#WantedBy=multi-user.target
 #WantedBy=halt.target reboot.target shutdown.target
-EOM6
+#EOM6
 #**************************************************************************************
 
 #make each script executable
@@ -159,7 +159,7 @@ sudo chmod +x $UPNPDELETESCRIPT
 #enable newly created services
 sudo systemctl daemon-reload
 sudo systemctl enable anonscript.service
-sudo systemctl enable upnpdelete.service
+#sudo systemctl enable upnpdelete.service
 
 #MY *ACTUAL* SERVICE
 #**************************************************************************************
