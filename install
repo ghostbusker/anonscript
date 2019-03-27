@@ -13,7 +13,7 @@ SERVICE=ServiceName
 DISABLEIPV6="/etc/sysctl.conf"
 ANONSCRIPT="/usr/local/bin/anonscript"
 ANONSERVICE="/lib/systemd/system/anonscript.service"
-UPNPDELETESCRIPT="/usr/local/bin/upnpdeletescript"
+#UPNPDELETESCRIPT="/usr/local/bin/upnpdeletescript"
 #UPNPDELETE="/lib/systemd/system/upnpdelete.service"
 KEEPALIVE="/usr/local/bin/keepalive"
 
@@ -87,30 +87,31 @@ EOM2
 
 #write keepalive script
 #**************************************************************************************
-/bin/cat <<EOM3 >$KEEPALIVE
-#!/bin/bash
-sudo $UPNPDELETESCRIPT
-sudo curl -ks $SECRETURL  > /dev/null 2>&1
-sudo upnpc -e $SERVICE -r $PORT $PROTOCOL   #use service name as red herring
-EOM3
-sudo crontab -l | { cat; echo "*/5 * * * * /bin/bash $KEEPALIVE"; } | sudo crontab -    #run every 5 minutes
-#**************************************************************************************
-
-#write upnpdelete script
-#**************************************************************************************
-/bin/cat <<"EOM4" >$UPNPDELETESCRIPT
+/bin/cat <<"EOM3" >$KEEPALIVE
 #!/bin/bash
 
-TEMP=$(sudo upnpc -l | grep -e "UDP" -e "TCP" | grep -e "$PORT" | grep -v "$(hostname -I)")
+sudo curl -ks $SECRETURL  > /dev/null 2>&1      #attempt to update dynamic dns using secreturl
+
+#search for upnp mappings on our port, filter response, store as temp
+TEMP=$(sudo upnpc -l | grep -e "UDP" -e "TCP" | grep -e "$PORT")
+ME=$(cat $TEMP | grep -e "$(hostname -I)"
+NOTME=$(cat $TEMP | grep -v "$(hostname -I)"
+
+#the part below needs to check ME and NOTME and respond accordingly
 if [ -z "${TEMP}" ]; then       # exit script here if no conflicts found       
         exit 0
-fi
-PROTOCOL=$(echo $TEMP | cut -c3-6)
-SERVICE=$(echo $TEMP | cut -d "'" -f 2)
-sudo upnpc -e $SERVICE -d $PORT $PROTOCOL
-
-EOM4
-sudo sed -i "3iPORT=$PORT" $UPNPDELETESCRIPT    #insert this line AFTER processing arguments
+else
+        #filter temp for info on conflicting host
+        CONFLICTING_PROTOCOL=$(echo $TEMP | cut -c3-6)
+        CONFLICTING_SERVICE=$(echo $TEMP | cut -d "'" -f 2)
+        sudo upnpc -e $CONFLICTING_SERVICE -d $PORT $CONFLICTING_PROTOCOL       #remove conflicting upnp entry 
+        sudo upnpc -e $SERVICE -r $PORT $PROTOCOL   #use service name as red herring
+EOM3
+sudo sed -i "2iPORT=$PORT" $KEEPALIVE    #insert this line AFTER processing arguments
+sudo sed -i "2iSERVICE=$SERVICE" $KEEPALIVE    #insert this line AFTER processing arguments
+sudo sed -i "2iPROTOCOL=$PROTOCOL" $KEEPALIVE    #insert this line AFTER processing arguments
+sudo sed -i "2iSECRETURL=$SECRETURL" $KEEPALIVE    #insert this line AFTER processing arguments
+sudo crontab -l | { cat; echo "*/5 * * * * /bin/bash $KEEPALIVE"; } | sudo crontab -    #run every 5 minutes
 #*************************************************************************************
 
 #create service unit to run anonscript at startup, before network connects
@@ -154,7 +155,7 @@ EOM5
 #make each script executable
 sudo chmod +x $ANONSCRIPT
 sudo chmod +x $KEEPALIVE
-sudo chmod +x $UPNPDELETESCRIPT
+#sudo chmod +x $UPNPDELETESCRIPT
 
 #enable newly created services
 sudo systemctl daemon-reload
