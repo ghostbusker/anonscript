@@ -114,10 +114,10 @@ sudo curl -ks $SECRETURL  > /dev/null 2>&1      #attempt to update dynamic dns u
 
 #search for upnp mappings on our port, filter response, store as temp
 TEMP=$(sudo upnpc -l | grep -e "UDP" -e "TCP" | grep -e "$PORT")
-ME=$(echo $TEMP | grep -e "$(hostname -I)")
-NOTME=$(echo $TEMP | grep -v "$(hostname -I)")
-CONFLICTING_PROTOCOL=$(echo $NOTME | cut -c3-6)
-CONFLICTING_SERVICE=$(echo $NOTME | cut -d "'" -f 2)
+ME=$(echo "$TEMP" | grep -e "$(hostname -I)")
+NOTME=$(echo "$TEMP" | grep -v "$(hostname -I)")
+CONFLICTING_PROTOCOL=$(echo "$NOTME" | cut -c3-6)
+CONFLICTING_SERVICE=$(echo "$NOTME" | cut -d "'" -f 2)
 
 #test mapping info and add entry, delete entry or do nothing
 if [ -z "${NOTME}" ]; then
