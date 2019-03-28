@@ -121,17 +121,17 @@ CONFLICTING_SERVICE=$(echo "$NOTME" | cut -d "'" -f 2)
 
 #test mapping info and add entry, delete entry or do nothing
 if [ -z "${NOTME}" ]; then
-        Echo "No conflicting UPNP entry."
+        echo "No conflicting UPNP entry."
 else
-        Echo "Removing conflicting UPNP entry..."
+        echo "Removing conflicting UPNP entry..."
         sudo upnpc -e $CONFLICTING_SERVICE -d $PORT $CONFLICTING_PROTOCOL       #remove conflicting upnp entry 
 fi
 
 if [ -z "${ME}" ]; then
-        Echo "Adding UPNP entry."
+        echo "Adding UPNP entry."
         sudo upnpc -e $SERVICE -r $PORT $PROTOCOL   #Add UPNP port mapping for our current IP
 else
-        Echo "UPNP entry for this IP already exists."
+        echo "UPNP entry for this IP already exists."
 fi
 sleep $INTERVAL
 exit 0
