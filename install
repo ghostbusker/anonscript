@@ -2,20 +2,20 @@
 
 whiptail --title "This is the script you are about to install" --textbox --scrolltext $0 24 78
 
-set -e #exits script if there is an error Used for debugging
-
-#Preset your main vairaibles here. You will still be promted to change
+#preset your main vairaibles here. you will still be promted to change these
 SECRETURL="http://YourDNSProvider.com/dynamic/update.php?L0ng5tr1ng0fL33t3rs4ndNumb3r5"
-PORT=22
-SERVICE=ServiceName
+PORT=22                 #port we are opening in the router and enabling our services on
+SERVICE=ServiceName     #this is what will show up in the routers' UPNP entry list
+TARGET=8.8.8.8          #public ip that responds to pings, proves internet connection
+INTERVAL=600            #how frequntly the keepalive script runs/pings
+TRIES=5                 #how many failed tries before reboot 
 
-#Location of each file being created
+#location of each file being created
 DISABLEIPV6="/etc/sysctl.conf"
 ANONSCRIPT="/usr/local/bin/anonscript"
 ANONSERVICE="/lib/systemd/system/anonscript.service"
-#UPNPDELETESCRIPT="/usr/local/bin/upnpdeletescript"
-#UPNPDELETE="/lib/systemd/system/upnpdelete.service"
 KEEPALIVE="/usr/local/bin/keepalive"
+KEEPALIVESERVICE="/lib/systemd/system/keepalive.service"
 
 #prompt for dynamic dns SECRETURL
 SECRETURL=$(whiptail --inputbox "Enter your dynamic dns update url starting with 'http://'" 8 78 $SECRETURL --title "Dynamic DNS URL" 3>&1 1>&2 2>&3)
@@ -41,8 +41,8 @@ sudo make install
 cd
 
 #setup UPNP
-sudo route add -net 239.0.0.0 netmask 255.0.0.0 eth0 > /dev/null 2>&1     #added /dev/null cause sometimes these throw errors
-sudo route add -net 239.0.0.0 netmask 255.0.0.0 wlan0 > /dev/null 2>&1
+sudo route add -net 239.0.0.0 netmask 255.0.0.0 eth0 
+sudo route add -net 239.0.0.0 netmask 255.0.0.0 wlan0
 
 #disable IPv6
 #**************************************************************************************
@@ -90,33 +90,64 @@ EOM2
 /bin/cat <<"EOM3" >$KEEPALIVE
 #!/bin/bash
 
+#ping to the gateway to make sure we're on the network
+GATEWAY=$(sudo ip route | grep "^default" | sed -e 's/.*via \(.*\) dev.*/\1/'^C)
+i=0		#initialize counter
+while true; do
+        /bin/ping -c1 -n $TARGET >/dev/null 2>&1        
+        [ $? -eq 0 ] && break	                #ping target succesful, exit loop
+	/bin/ping -c1 -n $GATEWAY >/dev/null 2>&1
+        [ $? -eq 0 ] &&	sleep $INTERVAL		#can reach gateway but not target, sleep an extra interval
+        [ i -eq $TRIES ] && sudo reboot	&& exit	#restarting the interfaces didnt work, rebooting
+        if [ i -eq ${TRIES-1} ]; then		#try reinitiating interfaces once before rebooting
+		sudo ifconfig wlan0 down > /dev/null 2>&1
+		sudo ifconfig eth0 down > /dev/null 2>&1
+		sleep 5
+		sudo ifconfig wlan0 up > /dev/null 2>&1
+		sudo ifconfig eth0 up > /dev/null 2>&1
+	fi
+	i++		#ping unsuccesful, increase counter and try again
+	sleep $INTERVAL
+done
+
 sudo curl -ks $SECRETURL  > /dev/null 2>&1      #attempt to update dynamic dns using secreturl
 
 #search for upnp mappings on our port, filter response, store as temp
 TEMP=$(sudo upnpc -l | grep -e "UDP" -e "TCP" | grep -e "$PORT")
 ME=$(cat $TEMP | grep -e "$(hostname -I)"
 NOTME=$(cat $TEMP | grep -v "$(hostname -I)"
+CONFLICTING_PROTOCOL=$(echo $NOTME | cut -c3-6)
+CONFLICTING_SERVICE=$(echo $NOTME | cut -d "'" -f 2)
 
-#the part below needs to check ME and NOTME and respond accordingly
-if [ -z "${TEMP}" ]; then       # exit script here if no conflicts found       
-        exit 0
+#test mapping info and add entry, delete entry or do nothing
+if [ -z "${NOTME}" ]; then       
+        Echo "No conflicting UPNP entry."
 else
-        #filter temp for info on conflicting host
-        CONFLICTING_PROTOCOL=$(echo $TEMP | cut -c3-6)
-        CONFLICTING_SERVICE=$(echo $TEMP | cut -d "'" -f 2)
+        Echo "Removing conflicting UPNP entry..."
         sudo upnpc -e $CONFLICTING_SERVICE -d $PORT $CONFLICTING_PROTOCOL       #remove conflicting upnp entry 
-        sudo upnpc -e $SERVICE -r $PORT $PROTOCOL   #use service name as red herring
+fi
+
+if [ -z "${ME}" ]; then
+        Echo "Adding UPNP entry."     
+        sudo upnpc -e $SERVICE -r $PORT $PROTOCOL   #Add UPNP port mapping for our current IP
+else
+        Echo "UPNP entry for this IP already exists."
+fi
+sleep $INTERVAL
+exit 0
 EOM3
 sudo sed -i "2iPORT=$PORT" $KEEPALIVE    #insert this line AFTER processing arguments
 sudo sed -i "2iSERVICE=$SERVICE" $KEEPALIVE    #insert this line AFTER processing arguments
 sudo sed -i "2iPROTOCOL=$PROTOCOL" $KEEPALIVE    #insert this line AFTER processing arguments
 sudo sed -i "2iSECRETURL=$SECRETURL" $KEEPALIVE    #insert this line AFTER processing arguments
-sudo crontab -l | { cat; echo "*/5 * * * * /bin/bash $KEEPALIVE"; } | sudo crontab -    #run every 5 minutes
+sudo sed -i "2iTARGET=$TARGET" $KEEPALIVE    #insert this line AFTER processing arguments
+sudo sed -i "2iINTERVAL=$INTERVAL" $KEEPALIVE    #insert this line AFTER processing arguments
+sudo sed -i "2iTRIES=$TRIES" $KEEPALIVE    #insert this line AFTER processing arguments
 #*************************************************************************************
 
 #create service unit to run anonscript at startup, before network connects
 #**************************************************************************************
-/bin/cat <<EOM5 >$ANONSERVICE
+/bin/cat <<EOM4 >$ANONSERVICE
 [Unit]
 Description=Run anonscript ASAP
 Before=basic.target
@@ -129,42 +160,39 @@ ExecStart=$ANONSCRIPT
 
 [Install]
 WantedBy=basic.target
+EOM4
+#**************************************************************************************
+
+#create service unit to run keepalive at all times after network connects
+#**************************************************************************************
+/bin/cat <<EOM5 >$KEEPALIVESERVICE
+[Unit]
+Description=Run keepalive whenever network is active
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=$KEEPALIVE
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
 EOM5
 #**************************************************************************************
 
-#Create service unit to delete existing upnp port mapping from router before shutdown
-#*************************************************************************************
-#/bin/cat <<EOM6 >$UPNPDELETE
-#[Unit]
-#Description=Delete UPnP Port Mapping
-#DefaultDependencies=no
-#Before=shutdown.target reboot.target halt.target
-
-#[Service]
-#Type=oneshot
-#RemainAfterExit=true
-#ExecStart=/bin/true
-#ExecStop=$UPNPDELETESCRIPT  #attempt to remove existing upnp mapping
-
-#[Install]
-#WantedBy=multi-user.target
-#WantedBy=halt.target reboot.target shutdown.target
-#EOM6
-#**************************************************************************************
 
 #make each script executable
 sudo chmod +x $ANONSCRIPT
 sudo chmod +x $KEEPALIVE
-#sudo chmod +x $UPNPDELETESCRIPT
 
 #enable newly created services
 sudo systemctl daemon-reload
 sudo systemctl enable anonscript.service
-#sudo systemctl enable upnpdelete.service
+sudo systemctl enable keepalive.service
 
 #MY *ACTUAL* SERVICE
 #**************************************************************************************
-#listen on port 2222 instead of 22 for ssh
+#listen on EXPOSED UPNP port instead of 22 for ssh
 sudo sed -i "$ a\port $PORT" /etc/ssh/sshd_config
 touch /boot/ssh
 #**************************************************************************************
