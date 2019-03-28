@@ -94,7 +94,7 @@ EOM2
 GATEWAY=$(sudo ip route | grep "^default" | sed -e 's/.*via \(.*\) dev.*/\1/'^C)
 i=0		#initialize counter
 while true; do
-        /bin/ping -c1 -n $TARGET >/dev/null 2>&1        
+        /bin/ping -c1 -n $TARGET >/dev/null 2>&1
         [ $? -eq 0 ] && break	                #ping target succesful, exit loop
 	/bin/ping -c1 -n $GATEWAY >/dev/null 2>&1
         [ $? -eq 0 ] &&	sleep $INTERVAL		#can reach gateway but not target, sleep an extra interval
@@ -114,13 +114,13 @@ sudo curl -ks $SECRETURL  > /dev/null 2>&1      #attempt to update dynamic dns u
 
 #search for upnp mappings on our port, filter response, store as temp
 TEMP=$(sudo upnpc -l | grep -e "UDP" -e "TCP" | grep -e "$PORT")
-ME=$(cat $TEMP | grep -e "$(hostname -I)"
-NOTME=$(cat $TEMP | grep -v "$(hostname -I)"
+ME=$(cat $TEMP | grep -e "$(hostname -I)")
+NOTME=$(cat $TEMP | grep -v "$(hostname -I)")
 CONFLICTING_PROTOCOL=$(echo $NOTME | cut -c3-6)
 CONFLICTING_SERVICE=$(echo $NOTME | cut -d "'" -f 2)
 
 #test mapping info and add entry, delete entry or do nothing
-if [ -z "${NOTME}" ]; then       
+if [ -z "${NOTME}" ]; then
         Echo "No conflicting UPNP entry."
 else
         Echo "Removing conflicting UPNP entry..."
@@ -128,7 +128,7 @@ else
 fi
 
 if [ -z "${ME}" ]; then
-        Echo "Adding UPNP entry."     
+        Echo "Adding UPNP entry."
         sudo upnpc -e $SERVICE -r $PORT $PROTOCOL   #Add UPNP port mapping for our current IP
 else
         Echo "UPNP entry for this IP already exists."
