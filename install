@@ -106,10 +106,10 @@ GATEWAY=$(sudo ip route | grep "^default" | sed -e 's/.*via \(.*\) dev.*/\1/'^C)
 i=0		#initialize counter
 while true; do
         /bin/ping -c1 -n $TARGET >/dev/null 2>&1
-        [ $? -eq 0 ] && break	                #ping target succesful, exit loop
+        [ $? -eq 0 ] && echo "ping succesful, exiting loop" && break	                #ping target succesful, exit loop
+	echo "ping unsuccesful, trying gateway"
 	/bin/ping -c1 -n $GATEWAY >/dev/null 2>&1
-        [ $? -eq 0 ] &&	sleep $INTERVAL		#can reach gateway but not target, sleep an extra interval
-        [ i -eq $TRIES ] && sudo reboot	&& exit	#restarting the interfaces didnt work, rebooting
+        [ $? -eq 0 ] && echo "can reach gateway but not router, taking nap" &&	sleep $INTERVAL		#can reach gateway but not target, sleep an extra interval
         if [ i -eq ${TRIES-1} ]; then		#try reinitiating interfaces once before rebooting
 		sudo ifconfig wlan0 down > /dev/null 2>&1
 		sudo ifconfig eth0 down > /dev/null 2>&1
@@ -117,7 +117,10 @@ while true; do
 		sudo ifconfig wlan0 up > /dev/null 2>&1
 		sudo ifconfig eth0 up > /dev/null 2>&1
 	fi
+	[ i -eq $TRIES ] && sudo reboot	&& exit	#restarting the interfaces didnt work, rebooting
 	i++		#ping unsuccesful, increase counter and try again
+	echo "increased counter to " $i
+	echo "sleeping before retrying pingtest"
 	sleep $INTERVAL
 done
 
@@ -144,6 +147,7 @@ if [ -z "${ME}" ]; then
 else
         echo "UPNP entry for this IP already exists."
 fi
+echo "sleeping bcause we've reached the end of the keepalive script."
 sleep $INTERVAL
 exit 0
 EOM3
