@@ -10,7 +10,7 @@ TARGET=8.8.8.8          #public ip that responds to pings, proves internet conne
 INTERVAL=600            #how frequntly the keepalive script runs/pings
 TRIES=5                 #how many failed tries before reboot 
 
-#location of each file being created
+#location of each file being created or modified
 DISABLEIPV6="/etc/sysctl.conf"
 ANONSCRIPT="/usr/local/bin/anonscript"
 ANONSERVICE="/lib/systemd/system/anonscript.service"
@@ -23,6 +23,7 @@ SECRETURL=$(whiptail --inputbox "Enter your dynamic dns update url starting with
 #prompt port # to be forwarded using upnp
 PORT=$(whiptail --inputbox "Enter the Port number to be added using UPnP" 8 78 $PORT --title "UPnP Port" 3>&1 1>&2 2>&3)
 
+#prompt for TCP or UDP 
 PROTOCOL=$(whiptail --radiolist "Which protocol to forward using UPnP" 20 78 2 --title "UPnP Protcol" \
 "TCP" "Transmission Control Protocol" ON \
 "UDP" "User Datagram Protocol" OFF 3>&1 1>&2 2>&3 )
@@ -30,8 +31,18 @@ PROTOCOL=$(whiptail --radiolist "Which protocol to forward using UPnP" 20 78 2 -
 #prompt for the name of the service that will show up in the UPnP entries/logs
 SERVICE=$(whiptail --inputbox "Enter the name that will be seen in the UPnP mapping entry." 8 78 $SERVICE --title "UPnP Service Name" 3>&1 1>&2 2>&3)
 
+#prompt for the IP that will be checked by the keepalive script
+TARGET=$(whiptail --inputbox "Ping this IP to check for internet connection." 8 78 $TARGET --title "Target IP" 3>&1 1>&2 2>&3)
+
+#prompt for the lenght of time between ping attempts
+INTERVAL=$(whiptail --inputbox "How frequently (in seconds) to test for network connectivity." 8 78 $INTERVAL --title "Interval" 3>&1 1>&2 2>&3)
+
+#prompt for the IP that will be checked by the keepalive script
+TRIES=$(whiptail --inputbox "How many failed ping attemps before forcing reboot and identity refresh." 8 78 $TRIES --title "TRIES" 3>&1 1>&2 2>&3)
+
 #update and install neccasary software
 sudo apt-get update
+echo "macchanger      macchanger/automatically_run    boolean false" | sudo debconf-set-selections #prevents macchnager from prompting durring install
 sudo apt-get install macchanger git -y    #install these programs
 sudo apt install wamerican    #creates dictionary for random /words in /usr/share/dict
 sudo git clone https://github.com/miniupnp/miniupnp   #get the latest version of this program and install it
@@ -136,13 +147,14 @@ fi
 sleep $INTERVAL
 exit 0
 EOM3
-sudo sed -i "2iPORT=$PORT" $KEEPALIVE    #insert this line AFTER processing arguments
-sudo sed -i "2iSERVICE=$SERVICE" $KEEPALIVE    #insert this line AFTER processing arguments
-sudo sed -i "2iPROTOCOL=$PROTOCOL" $KEEPALIVE    #insert this line AFTER processing arguments
-sudo sed -i "2iSECRETURL=$SECRETURL" $KEEPALIVE    #insert this line AFTER processing arguments
-sudo sed -i "2iTARGET=$TARGET" $KEEPALIVE    #insert this line AFTER processing arguments
-sudo sed -i "2iINTERVAL=$INTERVAL" $KEEPALIVE    #insert this line AFTER processing arguments
-sudo sed -i "2iTRIES=$TRIES" $KEEPALIVE    #insert this line AFTER processing arguments
+#insert these lines AFTER processing arguments
+sudo sed -i "2iPORT=$PORT" $KEEPALIVE
+sudo sed -i "2iSERVICE=$SERVICE" $KEEPALIVE
+sudo sed -i "2iPROTOCOL=$PROTOCOL" $KEEPALIVE
+sudo sed -i "2iSECRETURL=$SECRETURL" $KEEPALIVE
+sudo sed -i "2iTARGET=$TARGET" $KEEPALIVE
+sudo sed -i "2iINTERVAL=$INTERVAL" $KEEPALIVE
+sudo sed -i "2iTRIES=$TRIES" $KEEPALIVE
 #*************************************************************************************
 
 #create service unit to run anonscript at startup, before network connects
@@ -180,7 +192,6 @@ WantedBy=multi-user.target
 EOM5
 #**************************************************************************************
 
-
 #make each script executable
 sudo chmod +x $ANONSCRIPT
 sudo chmod +x $KEEPALIVE
@@ -190,11 +201,20 @@ sudo systemctl daemon-reload
 sudo systemctl enable anonscript.service
 sudo systemctl enable keepalive.service
 
-#MY *ACTUAL* SERVICE
+#MY *ACTUAL* Purpose
 #**************************************************************************************
 #listen on EXPOSED UPNP port instead of 22 for ssh
 sudo sed -i "$ a\port $PORT" /etc/ssh/sshd_config
 touch /boot/ssh
+#customize login motd
+sudo rm /etc/motd
+sudo rm /etc/update-motd.d/10-uname
+/bin/cat <<"EOM6" > /etc/update-motd.d/10-uname
+#!/bin/sh
+echo "hostname = " $(hostname)
+echo "local IP = " $(hostname -I)
+echo "public IP = " $(curl https://ipinfo.io/ip)
+EOM6
 #**************************************************************************************
 
 echo "script finished" 
