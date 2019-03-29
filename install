@@ -213,8 +213,10 @@ sudo rm /etc/update-motd.d/10-uname
 #!/bin/sh
 echo "hostname = " $(hostname)
 echo "local IP = " $(hostname -I)
-echo "public IP = " $(curl https://ipinfo.io/ip)
+PUBLIC=$(curl https://ipinfo.io/ip) > /dev/null 2>&1
+echo "public IP = " $PUBLIC
 EOM6
+sudo chmod+x /etc/update-motd.d/10-uname
 #**************************************************************************************
 
 echo "script finished" 
